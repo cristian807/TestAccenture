@@ -1,0 +1,29 @@
+# Build files
+build/
+.gradle/
+*.jar
+*.war
+
+# IDE files
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+*.env
+
+# Log files
+*.log
+logs/
+
+# Test files
+test-results/
