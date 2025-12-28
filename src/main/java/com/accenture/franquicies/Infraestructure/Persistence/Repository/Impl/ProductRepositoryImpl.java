@@ -31,7 +31,7 @@ public class ProductRepositoryImpl implements ProductRepository {
     @Override
     public Product save(Product product) {
         BranchEntity branchEntity = jpaBranchRepository.findById(product.getBranchId())
-                .orElseThrow(() -> new RuntimeException("Branch not found with id: " + product.getBranchId()));
+                .orElseThrow(() -> new RuntimeException("No se encontro sucursal con id: " + product.getBranchId()));
         
         ProductEntity entity = productMapper.toEntity(product, branchEntity);
         ProductEntity savedEntity = jpaProductRepository.save(entity);

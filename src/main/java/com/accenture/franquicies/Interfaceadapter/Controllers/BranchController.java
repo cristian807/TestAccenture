@@ -44,10 +44,10 @@ public class BranchController {
             Branch branch = createBranchUseCase.execute(request.getName(), request.getFranchiseId());
             BranchResponse response = toResponse(branch);
             return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(ApiResponse.success(response, "Branch created successfully"));
+                    .body(ApiResponse.success(response, "Sucursal creada exitosamente."));
         } catch (Exception e) {
             return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Error creating branch: " + e.getMessage()));
+                    .body(ApiResponse.error("Error creando la sucursal: " + e.getMessage()));
         }
     }
 
@@ -65,7 +65,7 @@ public class BranchController {
         return getByIdBranchUseCase.execute(id)
                 .map(branch -> ResponseEntity.ok(ApiResponse.success(toResponse(branch))))
                 .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(ApiResponse.error("Branch not found with id: " + id)));
+                        .body(ApiResponse.error("No existe una sucursal con el id: " + id)));
     }
 
     @GetMapping("/franchise/{franchiseId}")
@@ -81,10 +81,10 @@ public class BranchController {
     public ResponseEntity<ApiResponse<Void>> deleteBranch(@PathVariable Long id) {
         boolean deleted = deleteBranchUseCase.execute(id);
         if (deleted) {
-            return ResponseEntity.ok(ApiResponse.success(null, "Branch deleted successfully"));
+            return ResponseEntity.ok(ApiResponse.success(null, "Sucursal eliminada exitosamente."));
         }
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(ApiResponse.error("Branch not found with id: " + id));
+                .body(ApiResponse.error("No existe una sucursal con el id: " + id));
     }
 
     @PatchMapping("/{id}/name")
@@ -94,7 +94,7 @@ public class BranchController {
         return updateBranchNameUseCase.execute(id, request.getName())
                 .map(branch -> ResponseEntity.ok(ApiResponse.success(toResponse(branch), "Branch name updated successfully")))
                 .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(ApiResponse.error("Branch not found with id: " + id)));
+                        .body(ApiResponse.error("No existe una sucursal con el id: " + id)));
     }
 
     private BranchResponse toResponse(Branch branch) {

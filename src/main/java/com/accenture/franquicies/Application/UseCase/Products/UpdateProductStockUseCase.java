@@ -15,6 +15,12 @@ public class UpdateProductStockUseCase {
     }
 
     public Optional<Product> execute(Long id, Integer stock) {
+        if (stock == null) {
+            throw new IllegalArgumentException("El stock no puede ser nulo");
+        }
+        if (stock < 0) {
+            throw new IllegalArgumentException("El stock no puede ser negativo");
+        }
         return productRepository.updateStock(id, stock);
     }
 }

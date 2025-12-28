@@ -31,7 +31,7 @@ public class BranchRepositoryImpl implements BranchRepository {
     @Override
     public Branch save(Branch branch) {
         FranchiseEntity franchiseEntity = jpaFranchiseRepository.findById(branch.getFranchiseId())
-                .orElseThrow(() -> new RuntimeException("Franchise not found with id: " + branch.getFranchiseId()));
+                .orElseThrow(() -> new RuntimeException("No se encontro franquicia con id: " + branch.getFranchiseId()));
         
         BranchEntity entity = branchMapper.toEntity(branch, franchiseEntity);
         BranchEntity savedEntity = jpaBranchRepository.save(entity);

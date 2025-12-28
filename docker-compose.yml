@@ -1,29 +1,4 @@
-version: '3.8'
-
 services:
-  # MySQL Database Service
-  mysql:
-    image: mysql:8.0
-    container_name: franchises_mysql
-    restart: unless-stopped
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: franchises_db
-      MYSQL_USER: franchises_user
-      MYSQL_PASSWORD: franchises_pass
-    ports:
-      - "3307:3306"
-    volumes:
-      - mysql_data:/var/lib/mysql
-    networks:
-      - franchises_network
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
-      timeout: 20s
-      retries: 10
-      interval: 10s
-
-  # Spring Boot Application Service
   app:
     build:
       context: .
@@ -33,20 +8,9 @@ services:
     ports:
       - "8080:8080"
     environment:
-      DATABASE_URL: jdbc:mysql://mysql:3306/franchises_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-      DATABASE_USERNAME: root
-      DATABASE_PASSWORD: root
+      DATABASE_URL: jdbc:mysql://example-mysql-db.ckjm0u2ckv05.us-east-1.rds.amazonaws.com:3306/accenture_db
+      DATABASE_USERNAME: admin
+      DATABASE_PASSWORD: terraform*
       SERVER_PORT: 8080
-    depends_on:
-      mysql:
-        condition: service_healthy
-    networks:
-      - franchises_network
+   
 
-networks:
-  franchises_network:
-    driver: bridge
-
-volumes:
-  mysql_data:
-    driver: local

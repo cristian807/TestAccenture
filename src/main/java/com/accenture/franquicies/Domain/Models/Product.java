@@ -14,6 +14,9 @@ public class Product {
     private final Long branchId;
 
     public void updateStock(Integer stock) {
+        if (stock == null || stock < 0) {
+            throw new IllegalArgumentException("El stock no puede ser nulo ni negativo");
+        }
         this.stock = stock;
     }
 

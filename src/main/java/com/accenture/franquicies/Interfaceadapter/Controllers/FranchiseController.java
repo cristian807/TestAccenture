@@ -41,10 +41,10 @@ public class FranchiseController {
             Franchise franchise = createFranchiseUseCase.execute(request.getName());
             FranchiseResponse response = toResponse(franchise);
             return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(ApiResponse.success(response, "Franchise created successfully"));
+                    .body(ApiResponse.success(response, "Franquicia creada exitosamente."));
         } catch (Exception e) {
             return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Error creating franchise: " + e.getMessage()));
+                    .body(ApiResponse.error("Se presento un error creando la franquicia: " + e.getMessage()));
         }
     }
 
@@ -62,17 +62,17 @@ public class FranchiseController {
         return getByIdFranchise.execute(id)
                 .map(franchise -> ResponseEntity.ok(ApiResponse.success(toResponse(franchise))))
                 .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(ApiResponse.error("Franchise not found with id: " + id)));
+                        .body(ApiResponse.error("No se encontro franquicia con id: " + id)));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteFranchise(@PathVariable Long id) {
         boolean deleted = deleteByIdFranchise.execute(id);
         if (deleted) {
-            return ResponseEntity.ok(ApiResponse.success(null, "Franchise deleted successfully"));
+            return ResponseEntity.ok(ApiResponse.success(null, "Franquicia eliminada exitosamente."));
         }
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(ApiResponse.error("Franchise not found with id: " + id));
+                .body(ApiResponse.error("No se encontro franquicia con id: " + id));
     }
 
     @PatchMapping("/{id}/name")
@@ -80,9 +80,9 @@ public class FranchiseController {
             @PathVariable Long id,
             @RequestBody UpdateNameRequest request) {
         return updateFranchiseNameUseCase.execute(id, request.getName())
-                .map(franchise -> ResponseEntity.ok(ApiResponse.success(toResponse(franchise), "Franchise name updated successfully")))
+                .map(franchise -> ResponseEntity.ok(ApiResponse.success(toResponse(franchise), "Nombre de la franquicia actualizado con exito.")))
                 .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(ApiResponse.error("Franchise not found with id: " + id)));
+                        .body(ApiResponse.error("No se encontro franquicia con id: " + id)));
     }
 
     private FranchiseResponse toResponse(Franchise franchise) {

@@ -52,10 +52,10 @@ public class ProductController {
             Product product = createProductUseCase.execute(request.getName(), request.getStock(), request.getBranchId());
             ProductResponse response = toResponse(product);
             return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(ApiResponse.success(response, "Product created successfully"));
+                    .body(ApiResponse.success(response, "Producto creado exitosamente"));
         } catch (Exception e) {
             return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Error creating product: " + e.getMessage()));
+                    .body(ApiResponse.error("Se presento un error creando el producto: " + e.getMessage()));
         }
     }
 
@@ -73,7 +73,7 @@ public class ProductController {
         return getByIdProductUseCase.execute(id)
                 .map(product -> ResponseEntity.ok(ApiResponse.success(toResponse(product))))
                 .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(ApiResponse.error("Product not found with id: " + id)));
+                        .body(ApiResponse.error("No se encontro el producto con id: " + id)));
     }
 
     @GetMapping("/branch/{branchId}")
@@ -92,7 +92,7 @@ public class ProductController {
             return ResponseEntity.ok(ApiResponse.success(null, "Product deleted successfully"));
         }
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(ApiResponse.error("Product not found with id: " + id));
+                .body(ApiResponse.error("No se encontro el producto con id: " + id));
     }
 
     @PatchMapping("/{id}/stock")
@@ -100,9 +100,9 @@ public class ProductController {
             @PathVariable Long id,
             @RequestBody UpdateStockRequest request) {
         return updateProductStockUseCase.execute(id, request.getStock())
-                .map(product -> ResponseEntity.ok(ApiResponse.success(toResponse(product), "Product stock updated successfully")))
+                .map(product -> ResponseEntity.ok(ApiResponse.success(toResponse(product), "Se ha actualizado el stock del producto")))
                 .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(ApiResponse.error("Product not found with id: " + id)));
+                        .body(ApiResponse.error("No se encontro el producto con id: " + id)));
     }
 
     @PatchMapping("/{id}/name")
@@ -110,9 +110,9 @@ public class ProductController {
             @PathVariable Long id,
             @RequestBody UpdateNameRequest request) {
         return updateProductNameUseCase.execute(id, request.getName())
-                .map(product -> ResponseEntity.ok(ApiResponse.success(toResponse(product), "Product name updated successfully")))
+                .map(product -> ResponseEntity.ok(ApiResponse.success(toResponse(product), "Nombre del producto actualizado exitosamente.")))
                 .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(ApiResponse.error("Product not found with id: " + id)));
+                        .body(ApiResponse.error("No se encontro el producto con id: " + id)));
     }
 
     @GetMapping("/top-stock/franchise/{franchiseId}")
@@ -120,7 +120,7 @@ public class ProductController {
             @PathVariable Long franchiseId) {
         List<ProductWithBranchResponse> products = getTopStockProductsByFranchiseUseCase.execute(franchiseId);
         return ResponseEntity.ok(ApiResponse.success(products, 
-                "Top stock products by branch for franchise " + franchiseId));
+                "Producto con mas stock por franquicia " + franchiseId));
     }
 
     private ProductResponse toResponse(Product product) {

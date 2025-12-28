@@ -13,6 +13,12 @@ public class CreateProductUseCase {
     }
 
     public Product execute(String name, Integer stock, Long branchId) {
+        if (stock == null) {
+            throw new IllegalArgumentException("El stock no puede ser nulo");
+        }
+        if (stock < 0) {
+            throw new IllegalArgumentException("El stock no puede ser negativo");
+        }
         Product product = Product.builder()
                 .id(null)
                 .name(name)
