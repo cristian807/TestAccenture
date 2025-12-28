@@ -6,6 +6,10 @@ import com.accenture.franquicies.Interfaceadapter.Controllers.DTO.Request.Create
 import com.accenture.franquicies.Interfaceadapter.Controllers.DTO.Request.UpdateNameRequest;
 import com.accenture.franquicies.Interfaceadapter.Controllers.DTO.Response.ApiResponse;
 import com.accenture.franquicies.Interfaceadapter.Controllers.DTO.Response.BranchResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +19,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/branches")
+@Tag(name = "Sucursales", description = "API para gestión de sucursales")
 public class BranchController {
 
     private final CreateBranchUseCase createBranchUseCase;
@@ -39,6 +44,11 @@ public class BranchController {
     }
 
     @PostMapping
+    @Operation(summary = "Crear sucursal", description = "Crea una nueva sucursal asociada a una franquicia")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Sucursal creada exitosamente"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Error en los datos de entrada")
+    })
     public ResponseEntity<ApiResponse<BranchResponse>> createBranch(@RequestBody CreateBranchRequest request) {
         try {
             Branch branch = createBranchUseCase.execute(request.getName(), request.getFranchiseId());
@@ -52,6 +62,7 @@ public class BranchController {
     }
 
     @GetMapping
+    @Operation(summary = "Obtener todas las sucursales", description = "Retorna una lista de todas las sucursales registradas")
     public ResponseEntity<ApiResponse<List<BranchResponse>>> getAllBranches() {
         List<Branch> branches = getAllBranchesUseCase.execute();
         List<BranchResponse> response = branches.stream()
@@ -61,7 +72,13 @@ public class BranchController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<BranchResponse>> getBranchById(@PathVariable Long id) {
+    @Operation(summary = "Obtener sucursal por ID", description = "Busca y retorna una sucursal por su identificador")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Sucursal encontrada"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Sucursal no encontrada")
+    })
+    public ResponseEntity<ApiResponse<BranchResponse>> getBranchById(
+            @Parameter(description = "ID de la sucursal") @PathVariable Long id) {
         return getByIdBranchUseCase.execute(id)
                 .map(branch -> ResponseEntity.ok(ApiResponse.success(toResponse(branch))))
                 .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND)
@@ -69,7 +86,9 @@ public class BranchController {
     }
 
     @GetMapping("/franchise/{franchiseId}")
-    public ResponseEntity<ApiResponse<List<BranchResponse>>> getBranchesByFranchise(@PathVariable Long franchiseId) {
+    @Operation(summary = "Obtener sucursales por franquicia", description = "Retorna todas las sucursales de una franquicia específica")
+    public ResponseEntity<ApiResponse<List<BranchResponse>>> getBranchesByFranchise(
+            @Parameter(description = "ID de la franquicia") @PathVariable Long franchiseId) {
         List<Branch> branches = getBranchesByFranchiseUseCase.execute(franchiseId);
         List<BranchResponse> response = branches.stream()
                 .map(this::toResponse)
@@ -78,7 +97,13 @@ public class BranchController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteBranch(@PathVariable Long id) {
+    @Operation(summary = "Eliminar sucursal", description = "Elimina una sucursal del sistema por su ID")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Sucursal eliminada exitosamente"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Sucursal no encontrada")
+    })
+    public ResponseEntity<ApiResponse<Void>> deleteBranch(
+            @Parameter(description = "ID de la sucursal a eliminar") @PathVariable Long id) {
         boolean deleted = deleteBranchUseCase.execute(id);
         if (deleted) {
             return ResponseEntity.ok(ApiResponse.success(null, "Sucursal eliminada exitosamente."));
@@ -88,8 +113,13 @@ public class BranchController {
     }
 
     @PatchMapping("/{id}/name")
+    @Operation(summary = "Actualizar nombre de sucursal", description = "Actualiza el nombre de una sucursal existente")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Nombre actualizado exitosamente"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Sucursal no encontrada")
+    })
     public ResponseEntity<ApiResponse<BranchResponse>> updateBranchName(
-            @PathVariable Long id,
+            @Parameter(description = "ID de la sucursal") @PathVariable Long id,
             @RequestBody UpdateNameRequest request) {
         return updateBranchNameUseCase.execute(id, request.getName())
                 .map(branch -> ResponseEntity.ok(ApiResponse.success(toResponse(branch), "Branch name updated successfully")))
