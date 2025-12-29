@@ -1,7 +1,6 @@
 package com.accenture.franquicies.Infraestructure.Persistence.Mappers;
 
 import com.accenture.franquicies.Domain.Models.Product;
-import com.accenture.franquicies.Infraestructure.Persistence.Entity.BranchEntity;
 import com.accenture.franquicies.Infraestructure.Persistence.Entity.ProductEntity;
 import org.springframework.stereotype.Component;
 
@@ -14,17 +13,17 @@ public class ProductMapper {
                 .id(entity.getId())
                 .name(entity.getName())
                 .stock(entity.getStock())
-                .branchId(entity.getBranch() != null ? entity.getBranch().getId() : null)
+                .branchId(entity.getBranchId())
                 .build();
     }
 
-    public ProductEntity toEntity(Product product, BranchEntity branchEntity) {
+    public ProductEntity toEntity(Product product) {
         if (product == null) return null;
-        ProductEntity entity = new ProductEntity();
-        entity.setId(product.getId());
-        entity.setName(product.getName());
-        entity.setStock(product.getStock());
-        entity.setBranch(branchEntity);
-        return entity;
+        return ProductEntity.builder()
+                .id(product.getId())
+                .name(product.getName())
+                .stock(product.getStock())
+                .branchId(product.getBranchId())
+                .build();
     }
 }

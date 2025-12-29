@@ -3,18 +3,18 @@ package com.accenture.franquicies.Application.UseCase.Franchises;
 import com.accenture.franquicies.Domain.Models.Franchise;
 import com.accenture.franquicies.Domain.Repository.FranchiseRepository;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
+import reactor.core.publisher.Flux;
 
 @Service
-public class GetAllFranchise {
+public class GetAllFranchiseUseCase {
+
     private final FranchiseRepository franchiseRepository;
 
-    public GetAllFranchise(FranchiseRepository franchiseRepository) {
+    public GetAllFranchiseUseCase(FranchiseRepository franchiseRepository) {
         this.franchiseRepository = franchiseRepository;
     }
 
-    public List<Franchise> execute() {
+    public Flux<Franchise> execute() {
         return franchiseRepository.findAll();
     }
 }

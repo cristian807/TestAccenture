@@ -15,9 +15,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/products")
@@ -57,26 +58,28 @@ public class ProductController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Producto creado exitosamente"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Error en los datos de entrada")
     })
-    public ResponseEntity<ApiResponse<ProductResponse>> createProduct(@RequestBody CreateProductRequest request) {
-        try {
-            Product product = createProductUseCase.execute(request.getName(), request.getStock(), request.getBranchId());
-            ProductResponse response = toResponse(product);
-            return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(ApiResponse.success(response, "Producto creado exitosamente"));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Se presento un error creando el producto: " + e.getMessage()));
-        }
+    public Mono<ResponseEntity<ApiResponse<ProductResponse>>> createProduct(@RequestBody CreateProductRequest request) {
+        return createProductUseCase.execute(request.getName(), request.getStock(), request.getBranchId())
+                .map(product -> ResponseEntity.status(HttpStatus.CREATED)
+                        .body(ApiResponse.success(toResponse(product), "Producto creado exitosamente")))
+                .onErrorResume(e -> Mono.just(ResponseEntity.badRequest()
+                        .body(ApiResponse.error("Se presento un error creando el producto: " + e.getMessage()))));
     }
 
     @GetMapping
-    @Operation(summary = "Obtener todos los productos", description = "Retorna una lista de todos los productos registrados")
-    public ResponseEntity<ApiResponse<List<ProductResponse>>> getAllProducts() {
-        List<Product> products = getAllProductsUseCase.execute();
-        List<ProductResponse> response = products.stream()
+    @Operation(summary = "Obtener todos los productos", description = "Retorna todos los productos registrados")
+    public Mono<ResponseEntity<ApiResponse<List<ProductResponse>>>> getAllProducts() {
+        return getAllProductsUseCase.execute()
                 .map(this::toResponse)
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(ApiResponse.success(response));
+                .collectList()
+                .map(products -> ResponseEntity.ok(ApiResponse.success(products)));
+    }
+
+    @GetMapping("/stream")
+    @Operation(summary = "Stream de productos", description = "Retorna un stream SSE de todos los productos")
+    public Flux<ProductResponse> getAllProductsStream() {
+        return getAllProductsUseCase.execute()
+                .map(this::toResponse);
     }
 
     @GetMapping("/{id}")
@@ -85,23 +88,30 @@ public class ProductController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Producto encontrado"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Producto no encontrado")
     })
-    public ResponseEntity<ApiResponse<ProductResponse>> getProductById(
+    public Mono<ResponseEntity<ApiResponse<ProductResponse>>> getProductById(
             @Parameter(description = "ID del producto") @PathVariable Long id) {
         return getByIdProductUseCase.execute(id)
                 .map(product -> ResponseEntity.ok(ApiResponse.success(toResponse(product))))
-                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .defaultIfEmpty(ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(ApiResponse.error("No se encontro el producto con id: " + id)));
     }
 
     @GetMapping("/branch/{branchId}")
     @Operation(summary = "Obtener productos por sucursal", description = "Retorna todos los productos de una sucursal específica")
-    public ResponseEntity<ApiResponse<List<ProductResponse>>> getProductsByBranch(
+    public Mono<ResponseEntity<ApiResponse<List<ProductResponse>>>> getProductsByBranch(
             @Parameter(description = "ID de la sucursal") @PathVariable Long branchId) {
-        List<Product> products = getProductsByBranchUseCase.execute(branchId);
-        List<ProductResponse> response = products.stream()
+        return getProductsByBranchUseCase.execute(branchId)
                 .map(this::toResponse)
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(ApiResponse.success(response));
+                .collectList()
+                .map(products -> ResponseEntity.ok(ApiResponse.success(products)));
+    }
+
+    @GetMapping("/branch/{branchId}/stream")
+    @Operation(summary = "Stream de productos por sucursal", description = "Retorna un stream SSE de productos por sucursal")
+    public Flux<ProductResponse> getProductsByBranchStream(
+            @Parameter(description = "ID de la sucursal") @PathVariable Long branchId) {
+        return getProductsByBranchUseCase.execute(branchId)
+                .map(this::toResponse);
     }
 
     @DeleteMapping("/{id}")
@@ -110,14 +120,16 @@ public class ProductController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Producto eliminado exitosamente"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Producto no encontrado")
     })
-    public ResponseEntity<ApiResponse<Void>> deleteProduct(
+    public Mono<ResponseEntity<ApiResponse<Void>>> deleteProduct(
             @Parameter(description = "ID del producto a eliminar") @PathVariable Long id) {
-        boolean deleted = deleteProductUseCase.execute(id);
-        if (deleted) {
-            return ResponseEntity.ok(ApiResponse.success(null, "Product deleted successfully"));
-        }
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(ApiResponse.error("No se encontro el producto con id: " + id));
+        return deleteProductUseCase.execute(id)
+                .map(deleted -> {
+                    if (deleted) {
+                        return ResponseEntity.ok(ApiResponse.<Void>success(null, "Producto eliminado exitosamente"));
+                    }
+                    return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                            .body(ApiResponse.<Void>error("No se encontro el producto con id: " + id));
+                });
     }
 
     @PatchMapping("/{id}/stock")
@@ -126,12 +138,12 @@ public class ProductController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Stock actualizado exitosamente"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Producto no encontrado")
     })
-    public ResponseEntity<ApiResponse<ProductResponse>> updateProductStock(
+    public Mono<ResponseEntity<ApiResponse<ProductResponse>>> updateProductStock(
             @Parameter(description = "ID del producto") @PathVariable Long id,
             @RequestBody UpdateStockRequest request) {
         return updateProductStockUseCase.execute(id, request.getStock())
                 .map(product -> ResponseEntity.ok(ApiResponse.success(toResponse(product), "Se ha actualizado el stock del producto")))
-                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .defaultIfEmpty(ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(ApiResponse.error("No se encontro el producto con id: " + id)));
     }
 
@@ -141,23 +153,32 @@ public class ProductController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Nombre actualizado exitosamente"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Producto no encontrado")
     })
-    public ResponseEntity<ApiResponse<ProductResponse>> updateProductName(
+    public Mono<ResponseEntity<ApiResponse<ProductResponse>>> updateProductName(
             @Parameter(description = "ID del producto") @PathVariable Long id,
             @RequestBody UpdateNameRequest request) {
         return updateProductNameUseCase.execute(id, request.getName())
                 .map(product -> ResponseEntity.ok(ApiResponse.success(toResponse(product), "Nombre del producto actualizado exitosamente.")))
-                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .defaultIfEmpty(ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(ApiResponse.error("No se encontro el producto con id: " + id)));
     }
 
     @GetMapping("/top-stock/franchise/{franchiseId}")
-    @Operation(summary = "Obtener productos con mayor stock por franquicia", 
-               description = "Retorna el producto con mayor stock de cada sucursal de una franquicia")
-    public ResponseEntity<ApiResponse<List<ProductWithBranchResponse>>> getTopStockProductsByFranchise(
+    @Operation(summary = "Obtener productos con mayor stock por franquicia",
+            description = "Retorna el producto con mayor stock de cada sucursal de una franquicia")
+    public Mono<ResponseEntity<ApiResponse<List<ProductWithBranchResponse>>>> getTopStockProductsByFranchise(
             @Parameter(description = "ID de la franquicia") @PathVariable Long franchiseId) {
-        List<ProductWithBranchResponse> products = getTopStockProductsByFranchiseUseCase.execute(franchiseId);
-        return ResponseEntity.ok(ApiResponse.success(products, 
-                "Producto con mas stock por franquicia " + franchiseId));
+        return getTopStockProductsByFranchiseUseCase.execute(franchiseId)
+                .collectList()
+                .map(products -> ResponseEntity.ok(ApiResponse.success(products,
+                        "Producto con mas stock por franquicia " + franchiseId)));
+    }
+
+    @GetMapping("/top-stock/franchise/{franchiseId}/stream")
+    @Operation(summary = "Stream de productos con mayor stock por franquicia",
+            description = "Retorna un stream SSE del producto con mayor stock de cada sucursal de una franquicia")
+    public Flux<ProductWithBranchResponse> getTopStockProductsByFranchiseStream(
+            @Parameter(description = "ID de la franquicia") @PathVariable Long franchiseId) {
+        return getTopStockProductsByFranchiseUseCase.execute(franchiseId);
     }
 
     private ProductResponse toResponse(Product product) {

@@ -1,15 +1,13 @@
 package com.accenture.franquicies.Domain.Repository;
 
 import com.accenture.franquicies.Domain.Models.Branch;
-
-import java.util.List;
-import java.util.Optional;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 public interface BranchRepository {
-    Branch save(Branch branch);
-    List<Branch> findAll();
-    List<Branch> findByFranchiseId(Long franchiseId);
-    Optional<Branch> findById(Long id);
-    boolean deleteById(Long id);
-    Optional<Branch> updateName(Long id, String name);
+    Mono<Branch> save(Branch branch);
+    Mono<Branch> findById(Long id);
+    Flux<Branch> findAll();
+    Flux<Branch> findByFranchiseId(Long franchiseId);
+    Mono<Void> deleteById(Long id);
 }

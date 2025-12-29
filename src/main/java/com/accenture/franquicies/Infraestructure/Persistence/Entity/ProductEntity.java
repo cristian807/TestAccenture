@@ -1,34 +1,29 @@
 package com.accenture.franquicies.Infraestructure.Persistence.Entity;
 
-import jakarta.persistence.*;
-import lombok.Getter;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 
-@Entity
-@Table(name = "products")
-@Getter
-@Setter
+@Data
+@Builder
 @NoArgsConstructor
+@AllArgsConstructor
+@Table("products")
 public class ProductEntity {
+    
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @Column(nullable = false)
+    
+    @Column("name")
     private String name;
-
-    @Column(nullable = false)
+    
+    @Column("stock")
     private Integer stock;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "branch_id", nullable = false)
-    private BranchEntity branch;
-
-    public ProductEntity(Long id, String name, Integer stock, BranchEntity branch) {
-        this.id = id;
-        this.name = name;
-        this.stock = stock;
-        this.branch = branch;
-    }
+    
+    @Column("branch_id")
+    private Long branchId;
 }

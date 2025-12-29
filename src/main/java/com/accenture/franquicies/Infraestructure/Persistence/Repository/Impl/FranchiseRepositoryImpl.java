@@ -6,10 +6,8 @@ import com.accenture.franquicies.Infraestructure.Persistence.Entity.FranchiseEnt
 import com.accenture.franquicies.Infraestructure.Persistence.Mappers.FranchiseMapper;
 import com.accenture.franquicies.Infraestructure.Persistence.Repository.JpaFranchiseRepository;
 import org.springframework.stereotype.Repository;
-
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 @Repository
 public class FranchiseRepositoryImpl implements FranchiseRepository {
@@ -23,41 +21,26 @@ public class FranchiseRepositoryImpl implements FranchiseRepository {
     }
 
     @Override
-    public Franchise save(Franchise franchise) {
+    public Mono<Franchise> save(Franchise franchise) {
         FranchiseEntity entity = franchiseMapper.toEntity(franchise);
-        FranchiseEntity savedEntity = jpaFranchiseRepository.save(entity);
-        return franchiseMapper.toDomainSimple(savedEntity);
+        return jpaFranchiseRepository.save(entity)
+                .map(franchiseMapper::toDomain);
     }
 
     @Override
-    public List<Franchise> findAll() {
-        return jpaFranchiseRepository.findAll().stream()
-                .map(franchiseMapper::toDomainSimple)
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public Optional<Franchise> findById(Long id) {
+    public Mono<Franchise> findById(Long id) {
         return jpaFranchiseRepository.findById(id)
-                .map(franchiseMapper::toDomainSimple);
+                .map(franchiseMapper::toDomain);
     }
 
     @Override
-    public boolean deleteById(Long id) {
-        if (jpaFranchiseRepository.existsById(id)) {
-            jpaFranchiseRepository.deleteById(id);
-            return true;
-        }
-        return false;
+    public Flux<Franchise> findAll() {
+        return jpaFranchiseRepository.findAll()
+                .map(franchiseMapper::toDomain);
     }
 
     @Override
-    public Optional<Franchise> updateName(Long id, String name) {
-        return jpaFranchiseRepository.findById(id)
-                .map(entity -> {
-                    entity.setName(name);
-                    FranchiseEntity savedEntity = jpaFranchiseRepository.save(entity);
-                    return franchiseMapper.toDomainSimple(savedEntity);
-                });
+    public Mono<Void> deleteById(Long id) {
+        return jpaFranchiseRepository.deleteById(id);
     }
 }

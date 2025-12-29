@@ -8,7 +8,7 @@ services:
     ports:
       - "8080:8080"
     environment:
-      DATABASE_URL: jdbc:mysql://example-mysql-db.ckjm0u2ckv05.us-east-1.rds.amazonaws.com:3306/accenture_db
+      R2DBC_URL: r2dbc:mysql://example-mysql-db.ckjm0u2ckv05.us-east-1.rds.amazonaws.com:3306/accenture_db
       DATABASE_USERNAME: admin
       DATABASE_PASSWORD: terraform*
       SERVER_PORT: 8080

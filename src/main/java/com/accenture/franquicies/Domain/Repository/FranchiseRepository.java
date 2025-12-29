@@ -1,14 +1,12 @@
 package com.accenture.franquicies.Domain.Repository;
 
 import com.accenture.franquicies.Domain.Models.Franchise;
-
-import java.util.List;
-import java.util.Optional;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 public interface FranchiseRepository {
-    Franchise save(Franchise franchise);
-    List<Franchise> findAll();
-    Optional<Franchise> findById(Long id);
-    boolean deleteById(Long id);
-    Optional<Franchise> updateName(Long id, String name);
+    Mono<Franchise> save(Franchise franchise);
+    Mono<Franchise> findById(Long id);
+    Flux<Franchise> findAll();
+    Mono<Void> deleteById(Long id);
 }

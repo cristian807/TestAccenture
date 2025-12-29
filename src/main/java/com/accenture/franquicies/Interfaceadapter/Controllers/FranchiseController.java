@@ -13,9 +13,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/franchises")
@@ -23,20 +24,20 @@ import java.util.stream.Collectors;
 public class FranchiseController {
 
     private final CreateFranchiseUseCase createFranchiseUseCase;
-    private final GetAllFranchise getAllFranchise;
-    private final GetByIdFranchise getByIdFranchise;
-    private final DeleteByIdFranchise deleteByIdFranchise;
+    private final GetAllFranchiseUseCase getAllFranchiseUseCase;
+    private final GetByIdFranchiseUseCase getByIdFranchiseUseCase;
+    private final DeleteByIdFranchiseUseCase deleteByIdFranchiseUseCase;
     private final UpdateFranchiseNameUseCase updateFranchiseNameUseCase;
 
     public FranchiseController(CreateFranchiseUseCase createFranchiseUseCase,
-                               GetAllFranchise getAllFranchise,
-                               GetByIdFranchise getByIdFranchise,
-                               DeleteByIdFranchise deleteByIdFranchise,
+                               GetAllFranchiseUseCase getAllFranchiseUseCase,
+                               GetByIdFranchiseUseCase getByIdFranchiseUseCase,
+                               DeleteByIdFranchiseUseCase deleteByIdFranchiseUseCase,
                                UpdateFranchiseNameUseCase updateFranchiseNameUseCase) {
         this.createFranchiseUseCase = createFranchiseUseCase;
-        this.getAllFranchise = getAllFranchise;
-        this.getByIdFranchise = getByIdFranchise;
-        this.deleteByIdFranchise = deleteByIdFranchise;
+        this.getAllFranchiseUseCase = getAllFranchiseUseCase;
+        this.getByIdFranchiseUseCase = getByIdFranchiseUseCase;
+        this.deleteByIdFranchiseUseCase = deleteByIdFranchiseUseCase;
         this.updateFranchiseNameUseCase = updateFranchiseNameUseCase;
     }
 
@@ -46,26 +47,28 @@ public class FranchiseController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Franquicia creada exitosamente"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Error en los datos de entrada")
     })
-    public ResponseEntity<ApiResponse<FranchiseResponse>> createFranchise(@RequestBody CreateFranchiseRequest request) {
-        try {
-            Franchise franchise = createFranchiseUseCase.execute(request.getName());
-            FranchiseResponse response = toResponse(franchise);
-            return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(ApiResponse.success(response, "Franquicia creada exitosamente."));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Se presento un error creando la franquicia: " + e.getMessage()));
-        }
+    public Mono<ResponseEntity<ApiResponse<FranchiseResponse>>> createFranchise(@RequestBody CreateFranchiseRequest request) {
+        return createFranchiseUseCase.execute(request.getName())
+                .map(franchise -> ResponseEntity.status(HttpStatus.CREATED)
+                        .body(ApiResponse.success(toResponse(franchise), "Franquicia creada exitosamente.")))
+                .onErrorResume(e -> Mono.just(ResponseEntity.badRequest()
+                        .body(ApiResponse.error("Se presento un error creando la franquicia: " + e.getMessage()))));
     }
 
     @GetMapping
-    @Operation(summary = "Obtener todas las franquicias", description = "Retorna una lista de todas las franquicias registradas")
-    public ResponseEntity<ApiResponse<List<FranchiseResponse>>> getAllFranchises() {
-        List<Franchise> franchises = getAllFranchise.execute();
-        List<FranchiseResponse> response = franchises.stream()
+    @Operation(summary = "Obtener todas las franquicias", description = "Retorna todas las franquicias registradas")
+    public Mono<ResponseEntity<ApiResponse<List<FranchiseResponse>>>> getAllFranchises() {
+        return getAllFranchiseUseCase.execute()
                 .map(this::toResponse)
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(ApiResponse.success(response));
+                .collectList()
+                .map(franchises -> ResponseEntity.ok(ApiResponse.success(franchises)));
+    }
+
+    @GetMapping("/stream")
+    @Operation(summary = "Stream de franquicias", description = "Retorna un stream SSE de todas las franquicias")
+    public Flux<FranchiseResponse> getAllFranchisesStream() {
+        return getAllFranchiseUseCase.execute()
+                .map(this::toResponse);
     }
 
     @GetMapping("/{id}")
@@ -74,11 +77,11 @@ public class FranchiseController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Franquicia encontrada"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Franquicia no encontrada")
     })
-    public ResponseEntity<ApiResponse<FranchiseResponse>> getFranchiseById(
+    public Mono<ResponseEntity<ApiResponse<FranchiseResponse>>> getFranchiseById(
             @Parameter(description = "ID de la franquicia") @PathVariable Long id) {
-        return getByIdFranchise.execute(id)
+        return getByIdFranchiseUseCase.execute(id)
                 .map(franchise -> ResponseEntity.ok(ApiResponse.success(toResponse(franchise))))
-                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .defaultIfEmpty(ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(ApiResponse.error("No se encontro franquicia con id: " + id)));
     }
 
@@ -88,14 +91,16 @@ public class FranchiseController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Franquicia eliminada exitosamente"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Franquicia no encontrada")
     })
-    public ResponseEntity<ApiResponse<Void>> deleteFranchise(
+    public Mono<ResponseEntity<ApiResponse<Void>>> deleteFranchise(
             @Parameter(description = "ID de la franquicia a eliminar") @PathVariable Long id) {
-        boolean deleted = deleteByIdFranchise.execute(id);
-        if (deleted) {
-            return ResponseEntity.ok(ApiResponse.success(null, "Franquicia eliminada exitosamente."));
-        }
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(ApiResponse.error("No se encontro franquicia con id: " + id));
+        return deleteByIdFranchiseUseCase.execute(id)
+                .map(deleted -> {
+                    if (deleted) {
+                        return ResponseEntity.ok(ApiResponse.<Void>success(null, "Franquicia eliminada exitosamente."));
+                    }
+                    return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                            .body(ApiResponse.<Void>error("No se encontro franquicia con id: " + id));
+                });
     }
 
     @PatchMapping("/{id}/name")
@@ -104,12 +109,12 @@ public class FranchiseController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Nombre actualizado exitosamente"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Franquicia no encontrada")
     })
-    public ResponseEntity<ApiResponse<FranchiseResponse>> updateFranchiseName(
+    public Mono<ResponseEntity<ApiResponse<FranchiseResponse>>> updateFranchiseName(
             @Parameter(description = "ID de la franquicia") @PathVariable Long id,
             @RequestBody UpdateNameRequest request) {
         return updateFranchiseNameUseCase.execute(id, request.getName())
                 .map(franchise -> ResponseEntity.ok(ApiResponse.success(toResponse(franchise), "Nombre de la franquicia actualizado con exito.")))
-                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .defaultIfEmpty(ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(ApiResponse.error("No se encontro franquicia con id: " + id)));
     }
 
